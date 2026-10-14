@@ -5,6 +5,7 @@ import Quickshell.Io
 import qs.Ui
 import qs.Commons
 import "Model.js" as Model
+import "I18n.js" as I18n
 
 // Plugin manager: browse the Omarchy marketplace, install, update, enable,
 // disable and remove shell plugins.
@@ -72,6 +73,12 @@ Item {
     var v = d ? d[name] : undefined
     return v === undefined || v === null ? fallback : v
   }
+
+  // Display language: the choice made in Settings, or the system locale on
+  // "auto". Passed down to every child component as `lang`.
+  readonly property string lang: I18n.resolve(settingsView.language, Qt.locale().name)
+  function tr(s) { return I18n.tr.apply(null, [lang].concat(Array.prototype.slice.call(arguments))) }
+  function trn(n, one, many) { return I18n.trn.apply(null, [lang].concat(Array.prototype.slice.call(arguments))) }
 
   function open(payloadJson) {
     closingFromHost = false
@@ -196,13 +203,13 @@ Item {
   })
 
   readonly property var scopes: [
-    { key: "browse", label: "Browse", count: root.counts.browse },
-    { key: "installed", label: "Installed", count: root.counts.installed },
-    { key: "updates", label: "Updates", count: root.counts.updates },
-    { key: "enabled", label: "Enabled", count: root.counts.enabled },
-    { key: "builtin", label: "Built-in", count: root.counts.builtin },
-    { key: "all", label: "Everything", count: root.records.length },
-    { key: "bar", label: "Bar layout", count: 0 }
+    { key: "browse", label: root.tr("Browse"), count: root.counts.browse },
+    { key: "installed", label: root.tr("Installed"), count: root.counts.installed },
+    { key: "updates", label: root.tr("Updates"), count: root.counts.updates },
+    { key: "enabled", label: root.tr("Enabled"), count: root.counts.enabled },
+    { key: "builtin", label: root.tr("Built-in"), count: root.counts.builtin },
+    { key: "all", label: root.tr("Everything"), count: root.records.length },
+    { key: "bar", label: root.tr("Bar layout"), count: 0 }
   ]
 
   readonly property var categories: root.records.length
@@ -343,12 +350,12 @@ Item {
       onStreamFinished: {
         var msg = String(text || "").trim()
         if (msg !== "")
-          root.barError = msg
+          root.barError = I18n.raw(msg)
       }
     }
     onExited: function (exitCode) {
       if (exitCode !== 0 && root.barError === "")
-        root.barError = "That change could not be applied (exit " + exitCode + ")."
+        root.barError = I18n.later("That change could not be applied (exit %1).", exitCode)
       barActionProc.pending = []
       root.barBusy = false
       barReloadDelay.restart()
@@ -634,15 +641,15 @@ Item {
       // if the user explicitly chose it after being told it is unreviewed.
       var sha = chosen || record.reviewedCommit
       if (!sha) {
-        root.loadError = "No reviewed commit is published for " + record.name
-          + ", so it cannot be installed safely."
+        root.loadError = I18n.later("No reviewed commit is published for %1, so it cannot be installed safely.",
+          record.name)
         return
       }
       args = ["install", record.repo, record.id, sha]
     } else if (pending.verb === "update") {
       var target = chosen || record.reviewedCommit
       if (!target) {
-        root.loadError = "No reviewed commit is published for " + record.name + "."
+        root.loadError = I18n.later("No reviewed commit is published for %1.", record.name)
         return
       }
       args = ["update", record.id, target]
@@ -749,17 +756,18 @@ Item {
           root.catalog = JSON.parse(text || "null")
         } catch (e) {
           root.catalog = null
-          root.loadError = "The marketplace catalog could not be parsed."
+          root.loadError = I18n.later("The marketplace catalog could not be parsed.")
         }
         if (root.catalog && root.catalog.ok === false)
-          root.loadError = String(root.catalog.error || "The marketplace is unreachable.")
+          root.loadError = root.catalog.error
+            ? I18n.raw(String(root.catalog.error)) : I18n.later("The marketplace is unreachable.")
         root.rebuild()
       }
     }
     onExited: function (exitCode) {
       root.loadingCatalog = false
       if (exitCode !== 0 && root.loadError === "")
-        root.loadError = "Could not read the marketplace catalog (exit " + exitCode + ")."
+        root.loadError = I18n.later("Could not read the marketplace catalog (exit %1).", exitCode)
     }
   }
 
@@ -1059,7 +1067,7 @@ Item {
             // as a drawer over the list.
             visible: !window.showSidebar && !root.showSettings
             iconText: "\u2630"
-            tooltipText: "Views and categories"
+            tooltipText: root.tr("Views and categories")
             selected: root.sidebarOpen
             fontSize: Style.font.bodySmall
             horizontalPadding: Style.spacing.controlGap
@@ -1090,14 +1098,14 @@ Item {
             font.pixelSize: Style.font.caption
             text: {
               if (root.loadError !== "")
-                return root.loadError
+                return root.tr(root.loadError)
               if (root.busy)
-                return "Loading..."
+                return root.tr("Loading...")
               var bits = []
               if (root.counts.updates > 0)
-                bits.push(root.counts.updates + " update" + (root.counts.updates === 1 ? "" : "s") + " available")
+                bits.push(root.trn(root.counts.updates, "%1 update available", "%1 updates available"))
               if (root.catalog && root.catalog.stale)
-                bits.push("offline copy")
+                bits.push(root.tr("offline copy"))
               return bits.join("  ·  ")
             }
           }
@@ -1105,7 +1113,7 @@ Item {
           TextField {
             id: searchField
             Layout.preferredWidth: Math.min(Style.space(320), window.width * 0.4)
-            placeholderText: "Search plugins"
+            placeholderText: root.tr("Search plugins")
             font.family: Style.font.family
             font.pixelSize: Style.font.body
             foreground: Color.foreground
@@ -1141,17 +1149,17 @@ Item {
           }
 
           Button {
-            text: root.busy ? "..." : "Refresh"
-            tooltipText: "Re-fetch the marketplace catalog and re-check for updates (F5)"
+            text: root.busy ? "..." : root.tr("Refresh")
+            tooltipText: root.tr("Re-fetch the marketplace catalog and re-check for updates (F5)")
             fontSize: Style.font.bodySmall
             enabled: !root.busy
             onClicked: root.reload(true)
           }
 
           Button {
-            text: root.showSettings ? "Done" : "Settings"
+            text: root.showSettings ? root.tr("Done") : root.tr("Settings")
             tooltipText: root.showSettings
-              ? "Back to the plugin list" : "Where this sits in the bar, and how often it checks for updates"
+              ? root.tr("Back to the plugin list") : root.tr("Where this sits in the bar, and how often it checks for updates")
             fontSize: Style.font.bodySmall
             selected: root.showSettings
             onClicked: root.showSettings = !root.showSettings
@@ -1167,6 +1175,7 @@ Item {
 
           // sidebar, inline when there is room for a column
           Sidebar {
+            lang: root.lang
             Layout.preferredWidth: Style.space(180)
             Layout.fillHeight: true
             visible: window.showSidebar && !window.detailTakesOver && !root.showSettings
@@ -1201,7 +1210,7 @@ Item {
                 Layout.alignment: Qt.AlignVCenter
                 visible: !window.showSidebar
                 showLabel: false
-                label: "View"
+                label: root.tr("View")
                 fontFamily: Style.font.family
                 options: root.scopes.map(function (s) {
                   return {
@@ -1218,8 +1227,9 @@ Item {
                 // its count when the sidebar is hidden, so this would only
                 // repeat it into a row that has no space to spare.
                 visible: window.showSidebar || root.category !== ""
-                text: root.rows.length + (root.rows.length === 1 ? " plugin" : " plugins")
-                  + (root.category !== "" ? " in " + root.category : "")
+                text: root.category !== ""
+                  ? root.trn(root.rows.length, "%1 plugin in %2", "%1 plugins in %2", root.tr(root.category))
+                  : root.trn(root.rows.length, "%1 plugin", "%1 plugins")
                 color: Color.muted
                 font.family: Style.font.family
                 font.pixelSize: Style.font.caption
@@ -1230,8 +1240,8 @@ Item {
 
               Button {
                 visible: root.scope === "browse" || root.scope === "all"
-                text: root.verifiedOnly ? "Verified only" : "All listings"
-                tooltipText: "The marketplace marks a listing verified once its source has been reviewed"
+                text: root.verifiedOnly ? root.tr("Verified only") : root.tr("All listings")
+                tooltipText: root.tr("The marketplace marks a listing verified once its source has been reviewed")
                 fontSize: Style.font.caption
                 selected: root.verifiedOnly
                 onClicked: {
@@ -1244,8 +1254,8 @@ Item {
                 Layout.preferredWidth: Math.min(Style.space(200), window.width * 0.3)
                 Layout.alignment: Qt.AlignVCenter
                 showLabel: false
-                label: "Sort"
-                options: Model.sortOptions()
+                label: root.tr("Sort")
+                options: Model.sortOptions().map(function (o) { return { value: o.value, label: root.tr(o.label) } })
                 value: root.sortBy
                 fontFamily: Style.font.family
                 onChanged: function (v) {
@@ -1274,6 +1284,7 @@ Item {
               boundsBehavior: Flickable.StopAtBounds
 
               delegate: PluginRow {
+                lang: root.lang
                 required property var modelData
                 required property int index
                 width: ListView.view.width
@@ -1299,14 +1310,14 @@ Item {
                 font.pixelSize: Style.font.bodySmall
                 text: {
                   if (root.loadError !== "")
-                    return root.loadError
+                    return root.tr(root.loadError)
                   if (root.query !== "")
-                    return "Nothing matches “" + root.query + "”"
+                    return root.tr("Nothing matches “%1”", root.query)
                   if (root.scope === "updates")
-                    return "Every installed plugin is up to date."
+                    return root.tr("Every installed plugin is up to date.")
                   if (root.scope === "installed")
-                    return "No third-party plugins installed yet.\nBrowse the marketplace to add one."
-                  return "Nothing to show."
+                    return root.tr("No third-party plugins installed yet.\nBrowse the marketplace to add one.")
+                  return root.tr("Nothing to show.")
                 }
               }
             }
@@ -1314,6 +1325,7 @@ Item {
 
           // detail
           Detail {
+            lang: root.lang
             Layout.fillWidth: window.detailTakesOver
             Layout.preferredWidth: window.detailTakesOver
               ? -1 : Math.min(Style.space(400), window.width * 0.38)
@@ -1330,6 +1342,7 @@ Item {
 
           BarLayout {
             id: barEditor
+            lang: root.lang
             Layout.fillWidth: true
             Layout.fillHeight: true
             visible: root.barView && !root.showSettings
@@ -1351,6 +1364,8 @@ Item {
           // on a narrow window there is no room for a fourth column, and it is
           // a mode you leave, not a pane you glance at.
           Settings {
+            id: settingsView
+            lang: root.lang
             Layout.fillWidth: true
             Layout.fillHeight: true
             visible: root.showSettings
@@ -1375,18 +1390,19 @@ Item {
           // does nothing is what made the old footer read as broken.
           text: {
             if (root.barView)
-              return "hjkl or arrows move the cursor   HJKL move the widget   enter place   x remove   tab change view   ctrl+r refresh   esc back"
+              return root.tr("hjkl or arrows move the cursor   HJKL move the widget   enter place   x remove   tab change view   ctrl+r refresh   esc back")
             if (root.showSettings)
-              return "tab change view   esc back"
+              return root.tr("tab change view   esc back")
             var verb = root.primaryVerb(root.selected)
-            return "type to search   \u2191\u2193 select   enter open"
-              + (verb === "" ? "" : "   ctrl+enter " + verb)
-              + "   tab change view   ctrl+b bar   ctrl+u updates   ctrl+i installed   ctrl+g sidebar   ctrl+, settings   ctrl+r refresh   esc close"
+            return root.tr("type to search   \u2191\u2193 select   enter open")
+              + (verb === "" ? "" : "   " + root.tr("ctrl+enter %1", root.tr(verb)))
+              + "   " + root.tr("tab change view   ctrl+b bar   ctrl+u updates   ctrl+i installed   ctrl+g sidebar   ctrl+, settings   ctrl+r refresh   esc close")
           }
         }
 
         // ───────────────────────────────── job strip
         JobStrip {
+          lang: root.lang
           Layout.fillWidth: true
           visible: root.job !== null
           job: root.job
@@ -1428,6 +1444,7 @@ Item {
           }
 
           Sidebar {
+            lang: root.lang
             anchors.fill: parent
             anchors.margins: Style.spacing.panelPadding
             scopes: root.scopes
@@ -1443,6 +1460,7 @@ Item {
       // ───────────────────────────────── confirmation
       Confirm {
         id: confirmSheet
+        lang: root.lang
         anchors.fill: parent
         visible: root.pendingAction !== null
         action: root.pendingAction

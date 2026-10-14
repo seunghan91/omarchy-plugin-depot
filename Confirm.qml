@@ -3,6 +3,7 @@ import QtQuick.Layouts
 import Quickshell.Io
 import qs.Ui
 import qs.Commons
+import "I18n.js" as I18n
 
 // The confirmation step in front of anything that changes the system.
 //
@@ -14,6 +15,11 @@ import qs.Commons
 // should not require applying it first.
 Item {
   id: confirm
+
+  // Display language, passed down from Panel.
+  property string lang: "en"
+  function tr(s) { return I18n.tr.apply(null, [lang].concat(Array.prototype.slice.call(arguments))) }
+  function trn(n, one, many) { return I18n.trn.apply(null, [lang].concat(Array.prototype.slice.call(arguments))) }
 
   // { verb: "install"|"update"|"remove"|"enable"|"disable", record: {...} }
   property var action: null
@@ -69,7 +75,7 @@ Item {
       probeProc.running = true
     }
     if (verb === "update" && record) {
-      diffText = "Fetching the incoming changes..."
+      diffText = I18n.later("Fetching the incoming changes...")
       diffProc.running = true
     }
   }
@@ -125,11 +131,11 @@ Item {
             return ""
           var name = confirm.record.name
           switch (confirm.verb) {
-          case "install": return "Install " + name + "?"
-          case "update": return "Update " + name + "?"
-          case "remove": return "Remove " + name + "?"
-          case "enable": return "Enable " + name + "?"
-          case "disable": return "Disable " + name + "?"
+          case "install": return confirm.tr("Install %1?", name)
+          case "update": return confirm.tr("Update %1?", name)
+          case "remove": return confirm.tr("Remove %1?", name)
+          case "enable": return confirm.tr("Enable %1?", name)
+          case "disable": return confirm.tr("Disable %1?", name)
           default: return name
           }
         }
@@ -145,18 +151,18 @@ Item {
         text: {
           switch (confirm.verb) {
           case "install":
-            return "Omarchy will clone this repository into "
-              + "~/.config/omarchy/plugins, validate its manifest, and enable it."
+            return confirm.tr("Omarchy will clone this repository into "
+              + "~/.config/omarchy/plugins, validate its manifest, and enable it.")
           case "update":
-            return "The checkout will be fast-forwarded to its origin and "
-              + "re-validated. If validation fails the update is rolled back."
+            return confirm.tr("The checkout will be fast-forwarded to its origin and "
+              + "re-validated. If validation fails the update is rolled back.")
           case "remove":
-            return "The plugin's directory is deleted and it is taken out of "
-              + "your shell layout. This cannot be undone from here."
+            return confirm.tr("The plugin's directory is deleted and it is taken out of "
+              + "your shell layout. This cannot be undone from here.")
           case "enable":
-            return "The shell will load this plugin."
+            return confirm.tr("The shell will load this plugin.")
           case "disable":
-            return "The plugin stays installed but the shell stops loading it."
+            return confirm.tr("The plugin stays installed but the shell stops loading it.")
           default:
             return ""
           }
@@ -211,17 +217,17 @@ Item {
             color: confirm.moved ? Color.urgent : Color.menu.text
             text: {
               if (confirm.probing)
-                return "Checking what the repository points at now..."
+                return confirm.tr("Checking what the repository points at now...")
               if (confirm.probeError !== "")
-                return "Could not reach the repository: " + confirm.probeError
+                return confirm.tr("Could not reach the repository: %1", confirm.probeError)
               if (confirm.reviewedSha === "")
-                return "The marketplace has no reviewed commit for this listing, so "
-                  + "there is nothing to pin to. Installing is not offered."
+                return confirm.tr("The marketplace has no reviewed commit for this listing, so "
+                  + "there is nothing to pin to. Installing is not offered.")
               if (!confirm.moved)
-                return "The repository is still at the commit the marketplace reviewed. "
-                  + "Only that commit will be fetched."
-              return "This repository has moved since the marketplace reviewed it. "
-                + "The newer code has not been reviewed."
+                return confirm.tr("The repository is still at the commit the marketplace reviewed. "
+                  + "Only that commit will be fetched.")
+              return confirm.tr("This repository has moved since the marketplace reviewed it. "
+                + "The newer code has not been reviewed.")
             }
           }
 
@@ -234,9 +240,9 @@ Item {
             font.pixelSize: Style.font.caption
             color: Util.alpha(Color.menu.text, 0.7)
             text: {
-              var out = "reviewed  " + confirm.reviewedSha.substring(0, 12)
+              var out = confirm.tr("reviewed  %1", confirm.reviewedSha.substring(0, 12))
               if (confirm.headSha !== "" && confirm.moved)
-                out += "\nnow       " + confirm.headSha.substring(0, 12)
+                out += "\n" + confirm.tr("now       %1", confirm.headSha.substring(0, 12))
               return out
             }
           }
@@ -247,8 +253,8 @@ Item {
           ButtonGroup {
             visible: confirm.moved && confirm.reviewedSha !== ""
             options: [
-              { value: "reviewed", label: "Install reviewed" },
-              { value: "head", label: "Install newest (unreviewed)" }
+              { value: "reviewed", label: confirm.tr("Install reviewed") },
+              { value: "head", label: confirm.tr("Install newest (unreviewed)") }
             ]
             value: confirm.acceptHead ? "head" : "reviewed"
             fontSize: Style.font.caption
@@ -266,11 +272,11 @@ Item {
         font.family: Style.font.family
         font.pixelSize: Style.font.caption
         text: confirm.record && confirm.record.verified
-          ? "The marketplace lists this as verified: its source has been reviewed. "
-            + "A plugin still runs unsandboxed inside your shell process."
-          : "This listing is unverified. A plugin runs as arbitrary, unsandboxed "
+          ? confirm.tr("The marketplace lists this as verified: its source has been reviewed. "
+            + "A plugin still runs unsandboxed inside your shell process.")
+          : confirm.tr("This listing is unverified. A plugin runs as arbitrary, unsandboxed "
             + "code inside your long-lived shell process — read its source before "
-            + "you enable it."
+            + "you enable it.")
       }
 
       // The incoming diff for an update, straight from git.
@@ -293,7 +299,7 @@ Item {
           Text {
             id: diffLabel
             width: parent.width
-            text: confirm.diffText
+            text: confirm.tr(confirm.diffText)
             textFormat: Text.PlainText
             wrapMode: Text.WrapAnywhere
             color: Util.alpha(Color.menu.text, 0.85)
@@ -309,7 +315,7 @@ Item {
         spacing: Style.spacing.md
 
         Text {
-          text: confirm.canProceed ? "enter confirm    esc cancel" : "esc cancel"
+          text: confirm.canProceed ? confirm.tr("enter confirm    esc cancel") : confirm.tr("esc cancel")
           textFormat: Text.PlainText
           color: Color.muted
           font.family: Style.font.family
@@ -319,7 +325,7 @@ Item {
         Item { Layout.fillWidth: true }
 
         Button {
-          text: "Cancel"
+          text: confirm.tr("Cancel")
           onClicked: confirm.cancelled()
         }
 
@@ -329,12 +335,12 @@ Item {
           foreground: confirm.destructive ? Color.urgent : Color.foreground
           text: {
             switch (confirm.verb) {
-            case "install": return "Install"
-            case "update": return "Update"
-            case "remove": return "Remove"
-            case "enable": return "Enable"
-            case "disable": return "Disable"
-            default: return "Confirm"
+            case "install": return confirm.tr("Install")
+            case "update": return confirm.tr("Update")
+            case "remove": return confirm.tr("Remove")
+            case "enable": return confirm.tr("Enable")
+            case "disable": return confirm.tr("Disable")
+            default: return confirm.tr("Confirm")
             }
           }
           onClicked: confirm.confirmed()
@@ -386,7 +392,7 @@ Item {
       waitForEnd: true
       onStreamFinished: {
         var out = String(text || "").replace(/__PM_DONE__ \d+\s*$/, "").trim()
-        confirm.diffText = out === "" ? "No changes reported." : out
+        confirm.diffText = out === "" ? I18n.later("No changes reported.") : I18n.raw(out)
       }
     }
     stderr: StdioCollector {
@@ -394,7 +400,7 @@ Item {
       onStreamFinished: {
         var msg = String(text || "").trim()
         if (msg !== "")
-          confirm.diffText = msg
+          confirm.diffText = I18n.raw(msg)
       }
     }
   }

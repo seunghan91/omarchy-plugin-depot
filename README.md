@@ -73,6 +73,7 @@ often it looks for updates:
 | **Show in the bar** | Always · only while updates are waiting · never |
 | **Position** | Left · centre · right |
 | **Check for updates** | Hourly · 3 hours · 12 hours · never |
+| **Language** | Auto · English · 한국어 |
 
 Choosing **Never** is safe because the app is still reachable from the Omarchy
 menu. It hides the icon rather than taking the plugin out of the bar layout. That layout entry is also what marks the plugin *enabled*, and the shell
@@ -81,6 +82,10 @@ hide the icon by making the app unreachable. An invisible widget collapses its b
 slot to zero width instead (verified: `debugBarGeometry` reports `w=0` against
 `w=27` when shown), which costs nothing and keeps the app openable from the
 menu, a keybinding, or `omarchy-shell shell toggle io.github.omarcodehub.plugin-manager`.
+
+**Auto** follows the system locale. A language without a translation falls back
+to English. Translations live in [`I18n.js`](I18n.js), keyed by the English
+text, and `node test-i18n.js` checks that none is missing.
 
 Everything is stored inline on this plugin's entry in `shell.json` and written
 through the `omarchy bar` commands, never by editing that file. The shell owns

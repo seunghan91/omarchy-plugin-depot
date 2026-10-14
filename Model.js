@@ -1,4 +1,5 @@
 .pragma library
+.import "I18n.js" as I18n
 
 // Pure data logic for the plugin manager: joining the marketplace catalog to
 // what is installed, searching, filtering and sorting. No QML types are touched
@@ -183,6 +184,15 @@ function kindsFromCatalogKind(kind) {
   }).filter(function (k) { return k.length > 0 })
 }
 
+// A kind label as shown, translated part by part so "Service + Bar widget"
+// still finds "Service" and "Bar widget" in the table.
+function kindLabelText(label, lang) {
+  if (!label) return ""
+  return String(label).split(" + ").map(function (k) {
+    return I18n.tr(lang || "en", k)
+  }).join(" + ")
+}
+
 function kindLabelFromKinds(kinds) {
   if (!kinds || !kinds.length) return ""
   return kinds.map(function (k) {
@@ -281,8 +291,10 @@ var SORTS = [
   { value: "name", label: "By name" }
 ]
 
-function sortOptions() {
-  return SORTS
+function sortOptions(lang) {
+  return SORTS.map(function (s) {
+    return { value: s.value, label: I18n.tr(lang || "en", s.label) }
+  })
 }
 
 function isSort(value) {
@@ -334,16 +346,17 @@ function formatStars(n) {
 
 // `now` is passed in rather than read from the clock so the result is a pure
 // function of its inputs and can be tested.
-function relativeDate(iso, now) {
+function relativeDate(iso, now, lang) {
   if (!iso) return ""
   var then = Date.parse(iso)
   if (isNaN(then)) return ""
   var days = Math.floor((now - then) / 86400000)
-  if (days <= 0) return "today"
-  if (days === 1) return "yesterday"
-  if (days < 30) return days + "d ago"
-  if (days < 365) return Math.floor(days / 30) + "mo ago"
-  return Math.floor(days / 365) + "y ago"
+  lang = lang || "en"
+  if (days <= 0) return I18n.tr(lang, "today")
+  if (days === 1) return I18n.tr(lang, "yesterday")
+  if (days < 30) return I18n.tr(lang, "%1d ago", days)
+  if (days < 365) return I18n.tr(lang, "%1mo ago", Math.floor(days / 30))
+  return I18n.tr(lang, "%1y ago", Math.floor(days / 365))
 }
 
 function truncate(s, n) {

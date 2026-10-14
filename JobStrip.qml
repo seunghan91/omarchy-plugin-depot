@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import qs.Ui
 import qs.Commons
+import "I18n.js" as I18n
 
 // The running-action strip along the bottom.
 //
@@ -12,6 +13,11 @@ import qs.Commons
 // result of the job it never saw run.
 Rectangle {
   id: strip
+
+  // Display language, passed down from Panel.
+  property string lang: "en"
+  function tr(s) { return I18n.tr.apply(null, [lang].concat(Array.prototype.slice.call(arguments))) }
+  function trn(n, one, many) { return I18n.trn.apply(null, [lang].concat(Array.prototype.slice.call(arguments))) }
 
   property var job: null
   property string log: ""
@@ -43,10 +49,10 @@ Rectangle {
           var verb = String(strip.job.verb || "")
           var name = verb.charAt(0).toUpperCase() + verb.slice(1)
           if (strip.running)
-            return name.replace(/e$/, "") + "ing..."
+            return strip.tr(name.replace(/e$/, "") + "ing...")
           if (strip.failed)
-            return name + " failed (exit " + strip.job.exit + ")"
-          return name + " finished"
+            return strip.tr(name + " failed (exit %1)", strip.job.exit)
+          return strip.tr(name + " finished")
         }
         textFormat: Text.PlainText
         color: strip.failed ? Color.urgent : Color.foreground
@@ -66,8 +72,8 @@ Rectangle {
       Text {
         Layout.fillWidth: true
         visible: strip.running
-        text: "The panel may close and reopen while this runs — that is the shell "
-          + "reloading its plugins."
+        text: strip.tr("The panel may close and reopen while this runs — that is the shell "
+          + "reloading its plugins.")
         textFormat: Text.PlainText
         elide: Text.ElideRight
         color: Color.muted
@@ -79,7 +85,7 @@ Rectangle {
 
       Button {
         visible: !strip.running
-        text: "Dismiss"
+        text: strip.tr("Dismiss")
         fontSize: Style.font.caption
         onClicked: strip.dismiss()
       }

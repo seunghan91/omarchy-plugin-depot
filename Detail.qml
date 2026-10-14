@@ -4,6 +4,7 @@ import Quickshell
 import qs.Ui
 import qs.Commons
 import "Model.js" as Model
+import "I18n.js" as I18n
 
 // The right-hand pane: everything known about one plugin, and the actions
 // available for it.
@@ -13,6 +14,11 @@ import "Model.js" as Model
 // buttons the moment the inventory refreshes.
 Item {
   id: detail
+
+  // Display language, passed down from Panel.
+  property string lang: "en"
+  function tr(s) { return I18n.tr.apply(null, [lang].concat(Array.prototype.slice.call(arguments))) }
+  function trn(n, one, many) { return I18n.trn.apply(null, [lang].concat(Array.prototype.slice.call(arguments))) }
 
   property var record: null
   property bool jobRunning: false
@@ -48,7 +54,7 @@ Item {
     horizontalAlignment: Text.AlignHCenter
     wrapMode: Text.WordWrap
     visible: detail.record === null
-    text: "Select a plugin to see what it is and what you can do with it."
+    text: detail.tr("Select a plugin to see what it is and what you can do with it.")
     textFormat: Text.PlainText
     color: Color.muted
     font.family: Style.font.family
@@ -71,7 +77,7 @@ Item {
 
       Button {
         visible: detail.showBack
-        text: "‹  All plugins"
+        text: "‹  " + detail.tr("All plugins")
         fontSize: Style.font.bodySmall
         leftAlign: true
         onClicked: detail.back()
@@ -113,11 +119,11 @@ Item {
             return ""
           var bits = []
           if (detail.record.author !== "")
-            bits.push("by " + detail.record.author)
+            bits.push(detail.tr("by %1", detail.record.author))
           if (detail.record.version !== "")
             bits.push("v" + detail.record.version)
           if (detail.record.kindLabel !== "")
-            bits.push(detail.record.kindLabel)
+            bits.push(Model.kindLabelText(detail.record.kindLabel, detail.lang))
           return bits.join("  ·  ")
         }
         textFormat: Text.PlainText
@@ -143,23 +149,27 @@ Item {
         Stat {
           count: detail.record ? detail.record.hearts : 0
           glyph: "♥"
-          noun: "heart"
+          noun: detail.tr("heart")
+          plural: detail.tr("hearts")
         }
 
         Stat {
           count: detail.record ? detail.record.stars : 0
           glyph: "★"
-          noun: "star"
+          noun: detail.tr("star")
+          plural: detail.tr("stars")
         }
 
         Stat {
           count: detail.record ? detail.record.views : 0
-          noun: "view"
+          noun: detail.tr("view")
+          plural: detail.tr("views")
         }
 
         Stat {
           count: detail.record ? detail.record.copies : 0
-          noun: "install"
+          noun: detail.tr("install")
+          plural: detail.tr("installs")
         }
       }
 
@@ -180,16 +190,15 @@ Item {
         Layout.fillWidth: true
         visible: detail.record !== null && detail.record.gitDirty
         tone: Color.urgent
-        text: "This plugin's files have been edited locally, so an update cannot "
-          + "fast-forward. Revert the changes in " + (detail.record ? detail.record.sourceDir : "")
-          + " to update it."
+        text: detail.tr("This plugin's files have been edited locally, so an update cannot "
+          + "fast-forward. Revert the changes in %1 to update it.", detail.record ? detail.record.sourceDir : "")
       }
 
       Notice {
         Layout.fillWidth: true
         visible: detail.record !== null && detail.record.updateStatus === "unreachable"
         tone: Color.muted
-        text: "Could not reach this plugin's origin to check for updates."
+        text: detail.tr("Could not reach this plugin's origin to check for updates.")
       }
 
       Notice {
@@ -205,7 +214,7 @@ Item {
         visible: detail.record !== null && detail.record.installed
           && !detail.record.listed && !detail.record.firstParty
         tone: Color.muted
-        text: "Installed on this machine but not listed in the marketplace."
+        text: detail.tr("Installed on this machine but not listed in the marketplace.")
       }
 
       // ── actions ──────────────────────────────────────────────────────
@@ -217,44 +226,44 @@ Item {
 
         Button {
           visible: detail.canInstall
-          text: "Install"
+          text: detail.tr("Install")
           bordered: true
           enabled: !detail.jobRunning
-          tooltipText: "Clone and enable this plugin"
+          tooltipText: detail.tr("Clone and enable this plugin")
           onClicked: detail.act("install")
         }
 
         Button {
           visible: detail.canUpdate
-          text: "Update"
+          text: detail.tr("Update")
           bordered: true
           enabled: !detail.jobRunning
-          tooltipText: "Review the incoming changes, then fast-forward this plugin"
+          tooltipText: detail.tr("Review the incoming changes, then fast-forward this plugin")
           onClicked: detail.act("update")
         }
 
         Button {
           visible: detail.isInstalled && !detail.isFirstParty && detail.record.canDisable
-          text: detail.record && detail.record.enabled ? "Disable" : "Enable"
+          text: detail.record && detail.record.enabled ? detail.tr("Disable") : detail.tr("Enable")
           enabled: !detail.jobRunning
           tooltipText: detail.record && detail.record.enabled
-            ? "Keep it installed but stop loading it"
-            : "Load this plugin in the shell"
+            ? detail.tr("Keep it installed but stop loading it")
+            : detail.tr("Load this plugin in the shell")
           onClicked: detail.act(detail.record.enabled ? "disable" : "enable")
         }
 
         Button {
           visible: detail.isInstalled && !detail.isFirstParty
-          text: "Remove"
+          text: detail.tr("Remove")
           enabled: !detail.jobRunning
           foreground: Color.urgent
-          tooltipText: "Delete this plugin from ~/.config/omarchy/plugins"
+          tooltipText: detail.tr("Delete this plugin from ~/.config/omarchy/plugins")
           onClicked: detail.act("remove")
         }
 
         Button {
           visible: detail.record !== null && detail.record.repo !== ""
-          text: "Repository"
+          text: detail.tr("Repository")
           fontSize: Style.font.bodySmall
           tooltipText: detail.record ? detail.record.repo : ""
           onClicked: Quickshell.execDetached(["xdg-open", detail.record.repo])
@@ -262,7 +271,7 @@ Item {
 
         Button {
           visible: detail.record !== null && detail.record.marketplaceUrl !== ""
-          text: "Plugin page"
+          text: detail.tr("Plugin page")
           fontSize: Style.font.bodySmall
           tooltipText: detail.record ? detail.record.marketplaceUrl : ""
           onClicked: Quickshell.execDetached(["xdg-open", detail.record.marketplaceUrl])
@@ -279,53 +288,53 @@ Item {
 
       SectionLabel {
         Layout.fillWidth: true
-        text: "LISTING"
+        text: detail.tr("LISTING")
       }
 
       Fact {
         Layout.fillWidth: true
-        label: "Plugin id"
+        label: detail.tr("Plugin id")
         value: detail.record ? detail.record.id : ""
       }
 
       Fact {
         Layout.fillWidth: true
-        label: "Category"
-        value: detail.record ? detail.record.category : ""
+        label: detail.tr("Category")
+        value: detail.record ? detail.tr(detail.record.category) : ""
       }
 
       Fact {
         Layout.fillWidth: true
-        label: "Tags"
+        label: detail.tr("Tags")
         value: detail.record && detail.record.tags.length ? detail.record.tags.join(", ") : ""
       }
 
       Fact {
         Layout.fillWidth: true
-        label: "Licence"
+        label: detail.tr("Licence")
         value: detail.record ? detail.record.license : ""
       }
 
       Fact {
         Layout.fillWidth: true
-        label: "Listing"
+        label: detail.tr("Listing")
         value: {
           if (!detail.record || !detail.record.listed)
             return ""
-          return detail.record.verified ? "Verified by the marketplace" : "Unverified listing"
+          return detail.record.verified ? detail.tr("Verified by the marketplace") : detail.tr("Unverified listing")
         }
       }
 
       Fact {
         Layout.fillWidth: true
-        label: "Repo updated"
+        label: detail.tr("Repo updated")
         value: detail.record && detail.record.repoUpdatedAt
-          ? Model.relativeDate(detail.record.repoUpdatedAt, clock.now) : ""
+          ? Model.relativeDate(detail.record.repoUpdatedAt, clock.now, detail.lang) : ""
       }
 
       Fact {
         Layout.fillWidth: true
-        label: "Update"
+        label: detail.tr("Update")
         value: detail.record && detail.record.updateAvailable
           ? detail.record.updateFrom + " → " + detail.record.updateTo : ""
       }
@@ -339,70 +348,69 @@ Item {
         Layout.fillWidth: true
         Layout.topMargin: Style.spacing.sm
         visible: detail.isInstalled
-        text: "METADATA"
+        text: detail.tr("METADATA")
       }
 
       Fact {
         Layout.fillWidth: true
-        label: "Kinds"
+        label: detail.tr("Kinds")
         // Gated on being installed like the rest of this block: a listing
         // carries a kind too, and showing it here would leave one orphaned row
         // under a hidden METADATA heading.
         value: detail.isInstalled && detail.record.kinds.length
-          ? detail.record.kinds.join(", ") : ""
+          ? detail.record.kinds.map(function (k) { return detail.tr(k) }).join(", ") : ""
       }
 
       Fact {
         Layout.fillWidth: true
-        label: "Entry points"
+        label: detail.tr("Entry points")
         value: {
           if (!detail.record || !detail.record.entryPoints)
             return ""
           var out = []
           for (var kind in detail.record.entryPoints)
-            out.push(kind + ": " + detail.record.entryPoints[kind])
+            out.push(detail.tr(kind) + ": " + detail.record.entryPoints[kind])
           return out.join("\n")
         }
       }
 
       Fact {
         Layout.fillWidth: true
-        label: "Enabled"
-        value: detail.isInstalled ? (detail.record.enabled ? "yes" : "no") : ""
+        label: detail.tr("Enabled")
+        value: detail.isInstalled ? (detail.record.enabled ? detail.tr("yes") : detail.tr("no")) : ""
       }
 
       Fact {
         Layout.fillWidth: true
-        label: "Cloned from"
+        label: detail.tr("Cloned from")
         value: detail.record ? detail.record.clonedFrom : ""
       }
 
       Fact {
         Layout.fillWidth: true
-        label: "Settings"
+        label: detail.tr("Settings")
         value: detail.record && detail.record.settingsSchema.length
-          ? detail.record.settingsSchema.length + " option"
-            + (detail.record.settingsSchema.length === 1 ? "" : "s")
-            + " in shell.json"
+          ? detail.trn(detail.record.settingsSchema.length,
+                       "%1 option in shell.json", "%1 options in shell.json")
           : ""
       }
 
       Fact {
         Layout.fillWidth: true
-        label: "Installed at"
+        label: detail.tr("Installed at")
         value: detail.record ? detail.record.sourceDir : ""
       }
 
       Fact {
         Layout.fillWidth: true
-        label: "Reviewed at"
+        label: detail.tr("Reviewed at")
         value: detail.record && detail.record.reviewedCommit
           ? detail.record.reviewedCommit.substring(0, 12) : ""
       }
 
       Fact {
         Layout.fillWidth: true
-        label: "Pinned"
+        label: detail.tr("Pinned")
         // Whether what is on disk is the commit the marketplace reviewed. This
         // is the visible payoff of installing a pinned commit rather than a
         // moving branch head.
@@ -414,23 +422,23 @@ Item {
           if (reviewed === "" || head === "")
             return ""
           return head === reviewed
-            ? "yes — at the reviewed commit"
-            : "no — this checkout is not the reviewed commit"
+            ? detail.tr("yes — at the reviewed commit")
+            : detail.tr("no — this checkout is not the reviewed commit")
         }
       }
 
       Fact {
         Layout.fillWidth: true
-        label: "Tracking"
+        label: detail.tr("Tracking")
         value: {
           if (!detail.record || !detail.record.gitManaged)
-            return detail.isInstalled ? "not a git checkout" : ""
+            return detail.isInstalled ? detail.tr("not a git checkout") : ""
           var bits = []
           if (detail.record.gitBranch !== "")
             bits.push(detail.record.gitBranch)
           if (detail.record.gitHead !== "")
             bits.push(detail.record.gitHead.substring(0, 7))
-          bits.push(detail.record.gitDirty ? "locally modified" : "clean")
+          bits.push(detail.record.gitDirty ? detail.tr("locally modified") : detail.tr("clean"))
           return bits.join("  ·  ")
         }
       }
@@ -464,6 +472,7 @@ Item {
     property int count: 0
     property string glyph: ""
     property string noun: ""
+    property string plural: noun + "s"
 
     visible: stat.count > 0
     spacing: Style.spacing.xs
@@ -487,7 +496,7 @@ Item {
 
     Text {
       // "1 heart", but "1.2k hearts" — the compact form is never singular.
-      text: stat.count === 1 ? stat.noun : stat.noun + "s"
+      text: stat.count === 1 ? stat.noun : stat.plural
       textFormat: Text.PlainText
       color: Color.muted
       font.family: Style.font.family

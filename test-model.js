@@ -14,10 +14,16 @@ const path = require("path")
 const { execFileSync } = require("child_process")
 
 const dir = __dirname
-const src = fs.readFileSync(path.join(dir, "Model.js"), "utf8").replace(/^\.pragma library\s*/, "")
+// Model.js imports I18n.js; under node that import line is dropped and the
+// same file is evaluated and handed in under the name the import gives it.
+const i18nSrc = fs.readFileSync(path.join(dir, "I18n.js"), "utf8").replace(/^\.pragma library\s*/, "")
+const I18n = new Function(i18nSrc + "\nreturn { tables: tables, resolve: resolve, tr: tr, trn: trn, later: later, raw: raw }")()
+const src = fs.readFileSync(path.join(dir, "Model.js"), "utf8")
+  .replace(/^\.pragma library\s*/, "")
+  .replace(/^\.import .*$/gm, "")
 const Model = {}
 new Function(
-  "exports",
+  "exports", "I18n",
   src + `
   exports.normalizeRepo = normalizeRepo
   exports.mergeState = mergeState
@@ -33,8 +39,9 @@ new Function(
   exports.isSort = isSort
   exports.relativeDate = relativeDate
   exports.truncate = truncate
+  exports.kindLabelText = kindLabelText
 `
-)(Model)
+)(Model, I18n)
 
 let passed = 0
 let failed = 0

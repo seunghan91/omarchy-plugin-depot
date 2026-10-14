@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import qs.Ui
 import qs.Commons
+import "I18n.js" as I18n
 
 // The scope and category switcher.
 //
@@ -13,6 +14,11 @@ import qs.Commons
 // open.
 Item {
   id: sidebar
+
+  // Display language, passed down from Panel.
+  property string lang: "en"
+  function tr(s) { return I18n.tr.apply(null, [lang].concat(Array.prototype.slice.call(arguments))) }
+  function trn(n, one, many) { return I18n.trn.apply(null, [lang].concat(Array.prototype.slice.call(arguments))) }
 
   property var scopes: []
   property var categories: []
@@ -49,7 +55,7 @@ Item {
 
     Text {
       visible: sidebar.categories.length > 0
-      text: "CATEGORIES"
+      text: sidebar.tr("CATEGORIES")
       color: Color.muted
       font.family: Style.font.family
       font.pixelSize: Style.font.caption
@@ -67,7 +73,8 @@ Item {
       delegate: ScopeRow {
         required property var modelData
         width: ListView.view.width
-        label: modelData.name
+        // The catalogue's own category name; the selection still keys on it.
+        label: sidebar.tr(modelData.name)
         count: modelData.count
         selected: sidebar.category === modelData.name
         onClicked: sidebar.categoryChosen(modelData.name)

@@ -11,6 +11,18 @@ This project follows [semantic versioning](https://semver.org):
 | **minor** | a new user-visible capability |
 | **patch** | fixes, performance and internals, with no new capability |
 
+## Unreleased
+
+### Added
+
+- **Display language.** Every string the panel draws now goes through a small
+  translation table (`I18n.js`), with Korean as the first language. **Settings
+  → Language** picks Auto, English or 한국어; Auto follows the system locale
+  and anything without a translation stays in English. The English source text
+  is the key, so a string reworded here simply shows in English until its
+  translation catches up. `node test-i18n.js` fails when a string in the code
+  has no translation or a translation drops a placeholder.
+
 ## 1.1.1
 
 ### Fixed

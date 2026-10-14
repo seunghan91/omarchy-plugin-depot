@@ -3,6 +3,7 @@ import QtQuick.Layouts
 import Quickshell.Io
 import qs.Ui
 import qs.Commons
+import "I18n.js" as I18n
 
 // Settings for the manager itself.
 //
@@ -16,6 +17,11 @@ import qs.Commons
 // effective config instead of parsing the file behind its back.
 Item {
   id: settings
+
+  // Display language, passed down from Panel.
+  property string lang: "en"
+  function tr(s) { return I18n.tr.apply(null, [lang].concat(Array.prototype.slice.call(arguments))) }
+  function trn(n, one, many) { return I18n.trn.apply(null, [lang].concat(Array.prototype.slice.call(arguments))) }
 
   property string binDir: ""
   property string pluginId: "io.github.omarcodehub.plugin-manager"
@@ -34,6 +40,15 @@ Item {
 
   readonly property string section: state && state.section ? String(state.section) : "right"
   readonly property bool inBar: state !== null && state.inBar === true
+
+  // "auto" | "en" | "ko", the stored choice rather than the resolved language:
+  // "auto" has to stay selectable. Panel resolves it against the locale.
+  readonly property string language: {
+    if (!state || !state.settings)
+      return "auto"
+    var v = String(state.settings.language || "auto")
+    return I18n.languages.indexOf(v) >= 0 ? v : "auto"
+  }
 
   readonly property int checkMinutes: {
     if (!state || !state.settings || state.settings.updateCheckMinutes === undefined)
@@ -60,6 +75,9 @@ Item {
   }
 
   onVisibleChanged: if (visible) settings.reload()
+  // Read once at load as well, not only when the view is shown: Panel takes its
+  // display language from `language`, and needs it before Settings is opened.
+  Component.onCompleted: settings.reload()
   onBinDirChanged: if (visible) settings.reload()
 
   Rectangle {
@@ -84,7 +102,7 @@ Item {
       spacing: Style.spacing.lg
 
       Text {
-        text: "Settings"
+        text: settings.tr("Settings")
         textFormat: Text.PlainText
         color: Color.popups.text
         font.family: Style.font.family
@@ -94,7 +112,7 @@ Item {
       Text {
         Layout.fillWidth: true
         visible: settings.error !== ""
-        text: settings.error
+        text: settings.tr(settings.error)
         textFormat: Text.PlainText
         wrapMode: Text.WordWrap
         color: Color.urgent
@@ -106,20 +124,20 @@ Item {
 
       Field {
         Layout.fillWidth: true
-        label: "Show in the bar"
+        label: settings.tr("Show in the bar")
         description: settings.showInBar === "never"
-          ? "The bar icon is hidden and takes up no space. Open the manager from "
-            + "the Omarchy menu, a keybinding, or `omarchy-shell shell toggle "
-            + settings.pluginId + "`."
+          ? settings.tr("The bar icon is hidden and takes up no space. Open the manager from "
+            + "the Omarchy menu, a keybinding, or `omarchy-shell shell toggle %1`.",
+            settings.pluginId)
           : settings.showInBar === "updates"
-            ? "The icon appears only while an installed plugin has an update waiting."
-            : "The icon is always in the bar, with a count when updates are waiting."
+            ? settings.tr("The icon appears only while an installed plugin has an update waiting.")
+            : settings.tr("The icon is always in the bar, with a count when updates are waiting.")
 
         ButtonGroup {
           options: [
-            { value: "always", label: "Always" },
-            { value: "updates", label: "When updates wait" },
-            { value: "never", label: "Never" }
+            { value: "always", label: settings.tr("Always") },
+            { value: "updates", label: settings.tr("When updates wait") },
+            { value: "never", label: settings.tr("Never") }
           ]
           value: settings.showInBar
           fontSize: Style.font.bodySmall
@@ -130,16 +148,16 @@ Item {
 
       Field {
         Layout.fillWidth: true
-        label: "Position"
+        label: settings.tr("Position")
         description: settings.showInBar === "never"
-          ? "Which section the icon would sit in, if it were shown."
-          : "Which section of the bar the icon sits in."
+          ? settings.tr("Which section the icon would sit in, if it were shown.")
+          : settings.tr("Which section of the bar the icon sits in.")
 
         ButtonGroup {
           options: [
-            { value: "left", label: "Left" },
-            { value: "center", label: "Centre" },
-            { value: "right", label: "Right" }
+            { value: "left", label: settings.tr("Left") },
+            { value: "center", label: settings.tr("Centre") },
+            { value: "right", label: settings.tr("Right") }
           ]
           value: settings.section
           fontSize: Style.font.bodySmall
@@ -156,19 +174,19 @@ Item {
 
       Field {
         Layout.fillWidth: true
-        label: "Check for updates"
+        label: settings.tr("Check for updates")
         description: settings.checkMinutes === 0
-          ? "The bar widget will not poll on its own. The manager still checks "
-            + "every time you open it."
-          : "How often the bar widget asks each installed plugin's origin whether "
-            + "it has moved. One lightweight ref lookup per plugin; nothing is downloaded."
+          ? settings.tr("The bar widget will not poll on its own. The manager still checks "
+            + "every time you open it.")
+          : settings.tr("How often the bar widget asks each installed plugin's origin whether "
+            + "it has moved. One lightweight ref lookup per plugin; nothing is downloaded.")
 
         ButtonGroup {
           options: [
-            { value: "60", label: "Hourly" },
-            { value: "180", label: "3 hours" },
-            { value: "720", label: "12 hours" },
-            { value: "0", label: "Never" }
+            { value: "60", label: settings.tr("Hourly") },
+            { value: "180", label: settings.tr("3 hours") },
+            { value: "720", label: settings.tr("12 hours") },
+            { value: "0", label: settings.tr("Never") }
           ]
           value: String(settings.checkMinutes)
           fontSize: Style.font.bodySmall
@@ -177,11 +195,36 @@ Item {
         }
       }
 
+      PanelSeparator {
+        Layout.fillWidth: true
+      }
+
+      // ── display language ────────────────────────────────────────────
+
+      Field {
+        Layout.fillWidth: true
+        label: settings.tr("Language")
+        description: settings.tr("Auto follows the system locale. Languages without a "
+          + "translation fall back to English.")
+
+        ButtonGroup {
+          // Language names stay in their own language, so each is findable
+          // whatever the current one is.
+          options: I18n.languages.map(function (code) {
+            return { value: code, label: code === "auto" ? settings.tr("Auto") : I18n.languageNames[code] }
+          })
+          value: settings.language
+          fontSize: Style.font.bodySmall
+          enabled: !settings.loading && !applyProc.running
+          onChanged: function (v) { settings.apply("bar-set", "language", v) }
+        }
+      }
+
       Text {
         Layout.fillWidth: true
         Layout.topMargin: Style.spacing.sm
-        text: "Stored on this plugin's entry in ~/.config/omarchy/shell.json, "
-          + "written through the omarchy bar commands."
+        text: settings.tr("Stored on this plugin's entry in ~/.config/omarchy/shell.json, "
+          + "written through the omarchy bar commands.")
         textFormat: Text.PlainText
         wrapMode: Text.WordWrap
         color: Util.alpha(Color.popups.text, 0.5)
@@ -205,10 +248,10 @@ Item {
             settings.error = ""
           } else {
             settings.error = parsed && parsed.error
-              ? String(parsed.error) : "Could not read the current settings."
+              ? I18n.raw(String(parsed.error)) : I18n.later("Could not read the current settings.")
           }
         } catch (e) {
-          settings.error = "Could not read the current settings."
+          settings.error = I18n.later("Could not read the current settings.")
         }
       }
     }
@@ -225,12 +268,12 @@ Item {
       onStreamFinished: {
         var msg = String(text || "").trim()
         if (msg !== "")
-          settings.error = msg
+          settings.error = I18n.raw(msg)
       }
     }
     onExited: function (exitCode) {
       if (exitCode !== 0 && settings.error === "")
-        settings.error = "That change could not be applied (exit " + exitCode + ")."
+        settings.error = I18n.later("That change could not be applied (exit %1).", exitCode)
       // The shell rewrites shell.json asynchronously, so read back rather than
       // assuming the value we asked for is the value that landed.
       reloadDelay.restart()

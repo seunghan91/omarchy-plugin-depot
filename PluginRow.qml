@@ -2,6 +2,7 @@ import QtQuick
 import qs.Ui
 import qs.Commons
 import "Model.js" as Model
+import "I18n.js" as I18n
 
 // One row in the plugin list.
 //
@@ -18,6 +19,11 @@ import "Model.js" as Model
 // can never feed back into geometry.
 Rectangle {
   id: row
+
+  // Display language, passed down from Panel.
+  property string lang: "en"
+  function tr(s) { return I18n.tr.apply(null, [lang].concat(Array.prototype.slice.call(arguments))) }
+  function trn(n, one, many) { return I18n.trn.apply(null, [lang].concat(Array.prototype.slice.call(arguments))) }
 
   property var record: null
   property bool selected: false
@@ -93,7 +99,7 @@ Rectangle {
 
     Text {
       visible: row.record !== null && row.record.verified
-      text: "verified"
+      text: row.tr("verified")
       textFormat: Text.PlainText
       color: Util.alpha(Color.foreground, 0.45)
       font.family: Style.font.family
@@ -129,20 +135,20 @@ Rectangle {
 
     Badge {
       visible: row.record !== null && row.record.updateAvailable
-      label: "update"
+      label: row.tr("update")
       tone: Color.urgent
     }
 
     Badge {
       visible: row.record !== null && row.record.installed && !row.record.updateAvailable
         && !row.record.firstParty
-      label: row.record && row.record.enabled ? "installed" : "disabled"
+      label: row.record && row.record.enabled ? row.tr("installed") : row.tr("disabled")
       tone: row.record && row.record.enabled ? Color.accent : Color.muted
     }
 
     Badge {
       visible: row.record !== null && row.record.firstParty
-      label: "built-in"
+      label: row.tr("built-in")
       tone: Color.muted
     }
   }
@@ -178,7 +184,7 @@ Rectangle {
       if (row.record.author !== "")
         bits.push(row.record.author)
       if (row.record.kindLabel !== "")
-        bits.push(row.record.kindLabel)
+        bits.push(Model.kindLabelText(row.record.kindLabel, row.lang))
       var lead = bits.join("  ·  ")
       return lead === "" ? row.record.description : lead + "  —  " + row.record.description
     }

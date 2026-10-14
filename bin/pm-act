@@ -403,6 +403,12 @@ bar-set)
   # arbitrary keys into another widget's shell.json entry.
   case "$key" in
   showInBar | updateCheckMinutes) ;;
+  language)
+    case "$value" in
+    auto | en | ko) ;;
+    *) abort "Invalid value for $key." ;;
+    esac
+    ;;
   *) abort "Not a setting this plugin manages: '$key'." ;;
   esac
   [[ $value =~ ^[A-Za-z0-9_-]{1,32}$ ]] || abort "Invalid value for $key."

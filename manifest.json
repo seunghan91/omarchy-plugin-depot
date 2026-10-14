@@ -21,7 +21,8 @@
       "catalogRefreshMinutes": 60,
       "updateCheckMinutes": 180,
       "showPreviews": true,
-      "verifiedOnly": false
+      "verifiedOnly": false,
+      "language": "auto"
     }
   },
   "barWidget": {
@@ -32,7 +33,8 @@
     "defaultSection": "right",
     "defaults": {
       "updateCheckMinutes": 180,
-      "showInBar": "always"
+      "showInBar": "always",
+      "language": "auto"
     },
     "schema": [
       {

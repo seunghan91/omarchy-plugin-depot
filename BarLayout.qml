@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import qs.Ui
 import qs.Commons
+import "I18n.js" as I18n
 
 // Arranging the bar, by keyboard or by dragging.
 //
@@ -16,6 +17,11 @@ import qs.Commons
 // the user was looking at.
 Item {
   id: barView
+
+  // Display language, passed down from Panel.
+  property string lang: "en"
+  function tr(s) { return I18n.tr.apply(null, [lang].concat(Array.prototype.slice.call(arguments))) }
+  function trn(n, one, many) { return I18n.trn.apply(null, [lang].concat(Array.prototype.slice.call(arguments))) }
 
   // Not `data`: that is Item's default property, the list holding a component's
   // own children. Declaring it shadows the children and the view renders
@@ -200,7 +206,7 @@ Item {
       spacing: Style.spacing.controlGap
 
       Text {
-        text: "Bar layout"
+        text: barView.tr("Bar layout")
         color: Color.popups.text
         font.family: Style.font.family
         font.pixelSize: Style.font.title
@@ -208,8 +214,8 @@ Item {
       }
 
       Button {
-        text: "Undo my changes"
-        tooltipText: "Put the bar back the way it was when this view opened"
+        text: barView.tr("Undo my changes")
+        tooltipText: barView.tr("Put the bar back the way it was when this view opened")
         fontSize: Style.font.caption
         enabled: !barView.busy
         onClicked: barView.revertLayout()
@@ -223,9 +229,9 @@ Item {
         font.family: Style.font.family
         font.pixelSize: Style.font.caption
         text: barView.barData
-          ? "bar at the " + barView.barData.barPosition + "  ·  "
-            + barView.barData.counts.placed + " placed  ·  "
-            + barView.barData.counts.available + " available"
+          ? barView.tr("bar at the %1  ·  %2 placed  ·  %3 available",
+            barView.tr(barView.barData.barPosition),
+            barView.barData.counts.placed, barView.barData.counts.available)
           : ""
       }
     }
@@ -237,9 +243,9 @@ Item {
       color: Color.muted
       font.family: Style.font.family
       font.pixelSize: Style.font.caption
-      text: "Drag a widget where you want it, or move the cursor with the arrows "
+      text: barView.tr("Drag a widget where you want it, or move the cursor with the arrows "
         + "and press uppercase H, J, K or L to move the widget itself. x takes "
-        + "one off the bar."
+        + "one off the bar.")
     }
 
     // ── the three sections, drawn as the bar is ──────────────────────────
@@ -273,7 +279,7 @@ Item {
       visible: barView.available.length > 0
 
       Text {
-        text: "NOT ON THE BAR"
+        text: barView.tr("NOT ON THE BAR")
         color: Color.muted
         font.family: Style.font.family
         font.pixelSize: Style.font.caption
@@ -306,7 +312,7 @@ Item {
     spacing: Style.spacing.xxs
 
     Text {
-      text: col.section.toUpperCase()
+      text: barView.tr(col.section.toUpperCase())
       color: dropArea.containsDrag ? Color.accent : Color.muted
       font.family: Style.font.family
       font.pixelSize: Style.font.caption
@@ -345,7 +351,7 @@ Item {
 
         Text {
           visible: col.widgets.length === 0
-          text: "empty"
+          text: barView.tr("empty")
           color: Util.alpha(Color.popups.text, 0.35)
           font.family: Style.font.family
           font.pixelSize: Style.font.caption
@@ -436,7 +442,7 @@ Item {
         // than drawing a blank row.
         Text {
           visible: cell.widget !== null && cell.widget.missing === true
-          text: "missing"
+          text: barView.tr("missing")
           textFormat: Text.PlainText
           color: Color.urgent
           font.family: Style.font.family
