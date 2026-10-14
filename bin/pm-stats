@@ -18,7 +18,7 @@
 set -uo pipefail
 
 STATS_URL="https://api.omarchyplugins.com/v1/stats"
-CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/io.github.omarcodehub.plugin-manager"
+CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/io.github.seunghan91.plugin-depot-ko"
 STATS="$CACHE_DIR/stats.json"
 MAX_AGE=300
 

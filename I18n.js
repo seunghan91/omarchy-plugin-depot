@@ -22,7 +22,7 @@ var languageNames = {
 
 // What "auto" lands on when the system locale has no table. A distribution that
 // ships the panel to one audience can set this instead of patching resolve().
-var fallbackLanguage = "en"
+var fallbackLanguage = "ko"
 
 var tables = {
   "ko": {

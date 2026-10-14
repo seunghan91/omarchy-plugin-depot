@@ -372,7 +372,7 @@ bar-restore)
   # comes from a snapshot this plugin wrote itself, never from an argument, so
   # there is no untrusted layout crossing the boundary -- and every id and
   # section out of it is still validated before it is used.
-  snapshot="${XDG_RUNTIME_DIR:-/tmp}/io.github.omarcodehub.plugin-manager/bar-snapshot.json"
+  snapshot="${XDG_RUNTIME_DIR:-/tmp}/io.github.seunghan91.plugin-depot-ko/bar-snapshot.json"
   [[ -s $snapshot ]] || abort "There is no saved arrangement to go back to."
   jq -e '(.sections | type) == "array"' "$snapshot" >/dev/null 2>&1 ||
     abort "The saved arrangement could not be read."

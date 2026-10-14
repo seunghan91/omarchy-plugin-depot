@@ -1,11 +1,11 @@
 {
   "schemaVersion": 1,
-  "id": "io.github.omarcodehub.plugin-manager",
-  "name": "Plugin Depot",
+  "id": "io.github.seunghan91.plugin-depot-ko",
+  "name": "Plugin Depot (한국어)",
   "version": "1.1.1",
-  "author": "OmarCodeHub",
+  "author": "seunghan91 (Plugin Depot: OmarCodeHub)",
   "license": "MIT",
-  "description": "Browse the Omarchy marketplace and install, update, enable, disable or remove shell plugins from one panel",
+  "description": "Omarchy 마켓을 한국어로 둘러보고 셸 플러그인을 설치·업데이트·켜기·끄기·제거합니다",
   "kinds": [
     "panel",
     "bar-widget"
@@ -15,8 +15,8 @@
     "barWidget": "BarWidget.qml"
   },
   "panel": {
-    "displayName": "Plugin Depot",
-    "description": "Plugin manager: browse the marketplace, install, update and remove",
+    "displayName": "Plugin Depot (한국어)",
+    "description": "플러그인 관리자: 마켓 둘러보기, 설치, 업데이트, 제거",
     "defaults": {
       "catalogRefreshMinutes": 60,
       "updateCheckMinutes": 180,
@@ -26,8 +26,8 @@
     }
   },
   "barWidget": {
-    "displayName": "Plugin Depot",
-    "description": "Opens Plugin Depot, and shows a count when plugin updates are waiting",
+    "displayName": "Plugin Depot (한국어)",
+    "description": "Plugin Depot 한국어판을 열고, 플러그인 업데이트가 있으면 개수를 표시합니다",
     "category": "System",
     "allowMultiple": false,
     "defaultSection": "right",
@@ -61,5 +61,5 @@
       }
     ]
   },
-  "homepage": "https://github.com/OmarCodeHub/omarchy-marketplace"
+  "homepage": "https://github.com/seunghan91/omarchy-plugin-depot"
 }

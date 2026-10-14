@@ -26,7 +26,7 @@
 set -uo pipefail
 
 ORIGIN="https://plugins.omarchy.org/"
-CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/io.github.omarcodehub.plugin-manager/previews"
+CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/io.github.seunghan91.plugin-depot-ko/previews"
 
 MAX_BYTES=$((4 * 1024 * 1024))   # previews run 20-300 KB; this is generous
 MAX_DIM=4000                     # refuse a decompression bomb's dimensions

@@ -11,7 +11,7 @@ import "I18n.js" as I18n
 // disable and remove shell plugins.
 //
 // Summon it with:
-//   omarchy-shell shell toggle io.github.omarcodehub.plugin-manager
+//   omarchy-shell shell toggle io.github.seunghan91.plugin-depot-ko
 //
 // Notes for anyone editing this:
 //
@@ -54,7 +54,7 @@ Item {
   // shell.qml reads `loader.item.opened` to decide what toggle does.
   readonly property bool opened: window.visible
 
-  readonly property string pluginId: "io.github.omarcodehub.plugin-manager"
+  readonly property string pluginId: "io.github.seunghan91.plugin-depot-ko"
   // Newer Omarchy strips __sourceDir, __isFirstParty and __hostCapabilities
   // from the manifest before handing it to a third-party plugin, so this used
   // to resolve to "" there and every Process below was gated off, leaving the
@@ -66,7 +66,7 @@ Item {
     : decodeURIComponent(String(Qt.resolvedUrl("."))
       .replace(/^file:\/\//, "")).replace(/\/$/, "")
   readonly property string binDir: sourceDir === "" ? "" : sourceDir + "/bin"
-  readonly property string jobDir: Quickshell.env("XDG_RUNTIME_DIR") + "/io.github.omarcodehub.plugin-manager"
+  readonly property string jobDir: Quickshell.env("XDG_RUNTIME_DIR") + "/io.github.seunghan91.plugin-depot-ko"
 
   function setting(name, fallback) {
     var d = manifest && manifest.panel && manifest.panel.defaults ? manifest.panel.defaults : null
@@ -98,7 +98,7 @@ Item {
       root.restoreOnLoad = true
     }
 
-    // Deep link: `omarchy-shell shell summon io.github.omarcodehub.plugin-manager '{"select":"<id>"}'`
+    // Deep link: `omarchy-shell shell summon io.github.seunghan91.plugin-depot-ko '{"select":"<id>"}'`
     // opens straight to one plugin, so other tooling can hand the user off to
     // the thing they were reading about.
     var select = String(payload.select || "")

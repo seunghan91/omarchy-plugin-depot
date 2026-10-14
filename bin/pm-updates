@@ -15,7 +15,7 @@ export GIT_TERMINAL_PROMPT=0
 export GIT_SSH_COMMAND="${GIT_SSH_COMMAND:-ssh -oBatchMode=yes}"
 
 PLUGINS_DIR="$HOME/.config/omarchy/plugins"
-CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/io.github.omarcodehub.plugin-manager"
+CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/io.github.seunghan91.plugin-depot-ko"
 CACHE="$CACHE_DIR/updates.json"
 # Every check is a network round trip per installed plugin, and it ran on every
 # single panel open. Upstream does not move often enough to be worth that, so

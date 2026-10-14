@@ -14,7 +14,7 @@ import qs.Commons
 BarWidget {
   id: root
 
-  readonly property string pluginId: "io.github.omarcodehub.plugin-manager"
+  readonly property string pluginId: "io.github.seunghan91.plugin-depot-ko"
 
   readonly property var pluginManifest: {
     if (!bar || !bar.shell || !bar.shell.pluginRegistry)
@@ -38,7 +38,7 @@ BarWidget {
   property bool checked: false
 
   // "always" | "updates" | "never", set from the panel's Settings view via
-  // `omarchy bar set io.github.omarcodehub.plugin-manager showInBar <value>`.
+  // `omarchy bar set io.github.seunghan91.plugin-depot-ko showInBar <value>`.
   //
   // "never" hides the widget rather than removing it from the bar layout. That
   // entry is also what marks the plugin enabled, and a plugin the shell thinks

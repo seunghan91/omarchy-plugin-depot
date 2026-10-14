@@ -24,7 +24,7 @@ Item {
   function trn(n, one, many) { return I18n.trn.apply(null, [lang].concat(Array.prototype.slice.call(arguments))) }
 
   property string binDir: ""
-  property string pluginId: "io.github.omarcodehub.plugin-manager"
+  property string pluginId: "io.github.seunghan91.plugin-depot-ko"
 
   // Last state read back from the shell.
   property var state: null

@@ -15,7 +15,7 @@
 
 set -uo pipefail
 
-SNAPSHOT="${XDG_RUNTIME_DIR:-/tmp}/io.github.omarcodehub.plugin-manager/bar-snapshot.json"
+SNAPSHOT="${XDG_RUNTIME_DIR:-/tmp}/io.github.seunghan91.plugin-depot-ko/bar-snapshot.json"
 
 # --snapshot records the arrangement so it can be put back. Taken when the
 # editor opens, so "undo" means "the bar as I found it", which is the only

@@ -1,3 +1,37 @@
+<!-- 한국어판 소개: tools/apply-fork-identity.sh 와 함께 이 포크에만 있는 부분 -->
+# Plugin Depot 한국어판
+
+Omarchy 플러그인 관리자 [Plugin Depot](https://github.com/OmarCodeHub/omarchy-marketplace)의
+한국어판입니다. 마켓을 한국어로 둘러보고, 설치·업데이트·켜기·끄기·제거까지
+터미널 없이 할 수 있습니다.
+
+- **화면 전체가 한국어** — 메뉴·버튼·확인 창·설정·키 안내
+- **플러그인 설명 5,400여 개를 한국어로** — 마켓 원문이 바뀌면 그 항목만 다시 번역합니다.
+  원문이 바뀌었는데 아직 번역이 없으면 영어로 보여 줍니다.
+- **한국어로 검색** — 한국어 설명도 검색 대상입니다.
+- **원본과 같이 설치 가능** — 플러그인 id 가 달라(`io.github.seunghan91.plugin-depot-ko`) 캐시·설정이 섞이지 않습니다.
+- 설치는 원본과 똑같이 **마켓이 검토한 커밋만** 받습니다. 플러그인 코드는 바꾸지 않습니다.
+
+설치한 플러그인 자체의 화면은 각 플러그인이 정하므로 영어일 수 있습니다.
+
+## 설치
+
+```bash
+omarchy plugin add https://github.com/seunghan91/omarchy-plugin-depot.git --enable
+```
+
+**설정 → 언어**에서 자동·English·한국어를 고를 수 있습니다. 자동은 한국어입니다
+(Omarchy 본체가 en_US 로 돌기 때문).
+
+## 원본과 맞추기
+
+원본의 변경은 `tools/sync-upstream.sh`로 그대로 가져옵니다. 설명 번역 갱신은
+`tools/sync-upstream.sh --catalog`.
+
+라이선스는 원본과 같은 MIT 입니다. 원작자 OmarCodeHub 에게 감사드립니다.
+
+---
+
 # Plugin Depot
 
 A plugin manager for Omarchy, as a shell panel: browse the marketplace,
