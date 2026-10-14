@@ -175,7 +175,7 @@ Item {
 
       Text {
         Layout.fillWidth: true
-        text: detail.record ? detail.record.description : ""
+        text: Model.descriptionText(detail.record, detail.lang)
         textFormat: Text.PlainText
         wrapMode: Text.WordWrap
         color: Color.popups.text
@@ -206,7 +206,7 @@ Item {
         visible: detail.record !== null && !detail.record.installed
           && !detail.record.installable && detail.record.installNote !== ""
         tone: Color.muted
-        text: detail.record ? detail.record.installNote : ""
+        text: Model.installNoteText(detail.record, detail.lang)
       }
 
       Notice {

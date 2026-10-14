@@ -186,7 +186,8 @@ Rectangle {
       if (row.record.kindLabel !== "")
         bits.push(Model.kindLabelText(row.record.kindLabel, row.lang))
       var lead = bits.join("  ·  ")
-      return lead === "" ? row.record.description : lead + "  —  " + row.record.description
+      var description = Model.descriptionText(row.record, row.lang)
+      return lead === "" ? description : lead + "  —  " + description
     }
     textFormat: Text.PlainText
     elide: Text.ElideRight

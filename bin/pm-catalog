@@ -18,10 +18,13 @@
 set -uo pipefail
 
 CATALOG_URL="https://plugins.omarchy.org/catalog.json"
-CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/io.github.omarcodehub.plugin-manager"
+CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/io.github.seunghan91.plugin-depot-ko"
 FULL="$CACHE_DIR/catalog.json"
 ETAG="$CACHE_DIR/catalog.etag"
 INDEX="$CACHE_DIR/index.json"
+# Korean descriptions that ship with this build, keyed by plugin id and kept only
+# while the listing's English text is still the text that was translated.
+KO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/i18n/catalog.ko.json"
 MAX_AGE=600
 
 # 32 MiB. The feed is about 5.4 MB decompressed today, so this is ample
@@ -146,7 +149,7 @@ if [[ -n $DETAIL ]]; then
 fi
 
 # Rebuild the reduced index only when the full catalog is newer than it.
-if [[ ! -f $INDEX || $FULL -nt $INDEX ]]; then
+if [[ ! -f $INDEX || $FULL -nt $INDEX || ( -f $KO && $KO -nt $INDEX ) ]]; then
   tmp=$(mktemp "$CACHE_DIR/.index.XXXXXX") || exit 1
   # installNote is boilerplate: 3000+ entries drawn from a handful of distinct
   # strings, which was a third of a megabyte of the index repeating itself.
@@ -155,14 +158,30 @@ if [[ ! -f $INDEX || $FULL -nt $INDEX ]]; then
   # observedCommit is not emitted at all: nothing reads it. What matters is the
   # reviewed commit, and what the repository points at *now* is observed live by
   # bin/pm-probe rather than taken from a snapshot in the feed.
-  if jq -c '
+  #
+  # The Korean file only adds text. Anything malformed in it is skipped entry by
+  # entry, and if the merge fails outright the index is built without it, so a
+  # bad translation file can never cost the English catalog.
+  built=false
+  for ko_file in "$KO" /dev/null; do
+    [[ $ko_file == /dev/null || -f $ko_file ]] || continue
+    jq -c --slurpfile ko "$ko_file" '
+    def obj: if type == "object" then . else {} end;
+    def str: if type == "string" then . else "" end;
     ([ .plugins[].installNote // "" ] | unique) as $notes
+    | ($ko[0] | obj) as $k0
+    | ($k0.plugins | obj) as $kp
+    | ($k0.notes | obj) as $kn
     | {
       generatedAt: (.generatedAt // ""),
       notes: $notes,
+      notesKo: [ $notes[] as $n | ($kn[$n] | str) ],
       plugins: [ .plugins[] | . as $p | {
         id, name, author, category, kind, version,
         description: (.description // ""),
+        descriptionKo: (($kp[($p.id // "") | tostring] | obj) as $k
+          | if ($k.src | type) == "string" and $k.src == ($p.description // "")
+            then ($k.description | str) else "" end),
         tags: (.tags // []),
         license: (.license // ""),
         note: ($notes | index($p.installNote // "")),
@@ -178,7 +197,9 @@ if [[ ! -f $INDEX || $FULL -nt $INDEX ]]; then
         reviewedCommit: (.upstreamValidatedCommit // .listingValidatedCommit // ""),
         repoUpdatedAt: (.repositoryUpdatedAt // "")
       } ]
-    }' "$FULL" >"$tmp" 2>/dev/null; then
+    }' "$FULL" >"$tmp" 2>/dev/null && { built=true; break; }
+  done
+  if $built; then
     mv -f "$tmp" "$INDEX"
   else
     rm -f "$tmp"

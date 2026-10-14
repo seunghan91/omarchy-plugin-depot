@@ -40,6 +40,8 @@ function mergeState(catalog, local, updates, stats) {
   // installNote is interned in the index: a handful of distinct strings and a
   // position per plugin, rather than the same sentence repeated 3000 times.
   var notes = (catalog && catalog.notes) || []
+  // Korean descriptions bundled with this build, matched by bin/pm-catalog.
+  var notesKo = (catalog && catalog.notesKo) || []
 
   var updateById = {}
   for (var u = 0; u < updateList.length; u++) updateById[updateList[u].id] = updateList[u]
@@ -64,7 +66,7 @@ function mergeState(catalog, local, updates, stats) {
       if (crepo && localByRepo[crepo]) match = localByRepo[crepo]
     }
     if (match) claimed[match.id] = true
-    records.push(buildRecord(cp, match, match ? updateById[match.id] : null, statsById[cp.id], notes))
+    records.push(buildRecord(cp, match, match ? updateById[match.id] : null, statsById[cp.id], notes, notesKo))
   }
 
   // Anything installed that the marketplace does not list: sideloaded plugins,
@@ -72,13 +74,13 @@ function mergeState(catalog, local, updates, stats) {
   for (var k = 0; k < localPlugins.length; k++) {
     if (!claimed[localPlugins[k].id])
       records.push(buildRecord(null, localPlugins[k], updateById[localPlugins[k].id],
-                               statsById[localPlugins[k].id], notes))
+                               statsById[localPlugins[k].id], notes, notesKo))
   }
 
   return records
 }
 
-function buildRecord(cat, local, update, stat, notes) {
+function buildRecord(cat, local, update, stat, notes, notesKo) {
   var installed = !!local
   var firstParty = installed ? !!local.firstParty : false
 
@@ -143,6 +145,13 @@ function buildRecord(cat, local, update, stat, notes) {
     license: (cat && cat.license) || "",
     installNote: (cat && notes && cat.note !== undefined && cat.note !== null
       && notes[cat.note] !== undefined) ? notes[cat.note] : "",
+    // Only while the English shown is the marketplace text that was translated;
+    // an installed plugin whose own manifest says something else keeps that.
+    descriptionKo: (cat && cat.descriptionKo
+      && (!(local && local.description) || local.description === cat.description))
+      ? cat.descriptionKo : "",
+    installNoteKo: (cat && notesKo && cat.note !== undefined && cat.note !== null
+      && notesKo[cat.note]) || "",
     repoUpdatedAt: (cat && cat.repoUpdatedAt) || "",
 
     installed: installed,
@@ -171,6 +180,7 @@ function buildRecord(cat, local, update, stat, notes) {
       (local && local.id) || (cat && cat.id) || "",
       (local && local.author) || (cat && cat.author) || "",
       (local && local.description) || (cat && cat.description) || "",
+      (cat && cat.descriptionKo) || "",
       ((cat && cat.tags) || []).join(" "),
       (cat && cat.category) || ""
     ].join("   ").toLowerCase()
@@ -362,4 +372,16 @@ function relativeDate(iso, now, lang) {
 function truncate(s, n) {
   s = String(s || "")
   return s.length > n ? s.slice(0, n - 1) + "…" : s
+}
+
+// The record's description in the display language, English when there is
+// no translation for it.
+function descriptionText(record, lang) {
+  if (!record) return ""
+  return lang === "ko" && record.descriptionKo ? record.descriptionKo : record.description
+}
+
+function installNoteText(record, lang) {
+  if (!record) return ""
+  return lang === "ko" && record.installNoteKo ? record.installNoteKo : record.installNote
 }
