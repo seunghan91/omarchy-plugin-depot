@@ -20,7 +20,7 @@ const reportOnly = process.argv.includes("--report")
 
 function loadI18n() {
   const src = fs.readFileSync(path.join(dir, "I18n.js"), "utf8").replace(/^\.pragma library\s*/, "")
-  return new Function(src + "\nreturn { languages: languages, tables: tables, resolve: resolve, tr: tr, trn: trn, later: later, raw: raw }")()
+  return new Function(src + "\nreturn { languages: languages, tables: tables, resolve: resolve, tr: tr, trn: trn, later: later, raw: raw, fallbackLanguage: fallbackLanguage }")()
 }
 
 const I18n = loadI18n()
@@ -143,14 +143,18 @@ function placeholders(s) {
 console.log("I18n.resolve")
 check("auto + ko_KR -> ko", I18n.resolve("auto", "ko_KR") === "ko")
 check("auto + ko-KR -> ko", I18n.resolve("auto", "ko-KR") === "ko")
-check("auto + en_US -> en", I18n.resolve("auto", "en_US") === "en")
-check("auto + unsupported -> en", I18n.resolve("auto", "fr_FR") === "en")
-check("auto + empty locale -> en", I18n.resolve("auto", "") === "en")
+// What Auto lands on without a matching table; "en" here, a distribution may
+// change it.
+const fb = I18n.fallbackLanguage
+check("explicit en stays en", I18n.resolve("en", "ko_KR") === "en")
+check("auto + en_US -> fallback", I18n.resolve("auto", "en_US") === fb)
+check("auto + unsupported -> fallback", I18n.resolve("auto", "fr_FR") === fb)
+check("auto + empty locale -> fallback", I18n.resolve("auto", "") === fb)
 check("empty setting means auto", I18n.resolve("", "ko_KR") === "ko")
 check("explicit ko", I18n.resolve("ko", "en_US") === "ko")
 check("explicit en beats a ko locale", I18n.resolve("en", "ko_KR") === "en")
-check("unsupported setting -> en", I18n.resolve("xx", "ko_KR") === "en")
-check("prefix is not a match", I18n.resolve("auto", "kok_IN") === "en")
+check("unsupported setting -> fallback", I18n.resolve("xx", "ko_KR") === fb)
+check("prefix is not a match", I18n.resolve("auto", "kok_IN") === fb)
 
 console.log("I18n.tr / trn")
 // Work on a probe key added to the loaded copy, never to the file.
