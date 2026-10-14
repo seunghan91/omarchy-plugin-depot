@@ -20,6 +20,10 @@ var languageNames = {
   "ko": "한국어"
 }
 
+// What "auto" lands on when the system locale has no table. A distribution that
+// ships the panel to one audience can set this instead of patching resolve().
+var fallbackLanguage = "en"
+
 var tables = {
   "ko": {
     "%1 option in shell.json": "shell.json 옵션 %1개",
@@ -275,17 +279,17 @@ var tables = {
   }
 }
 
-// "auto" follows the system locale. Anything unknown is English.
+// "auto" follows the system locale. Anything else is the fallback.
 function resolve(setting, localeName) {
   var s = String(setting || "auto")
   if (s !== "auto")
-    return tables[s] ? s : "en"
+    return tables[s] || s === "en" ? s : fallbackLanguage
   var l = String(localeName || "").toLowerCase()
   for (var code in tables) {
     if (l === code || l.indexOf(code + "_") === 0 || l.indexOf(code + "-") === 0)
       return code
   }
-  return "en"
+  return fallbackLanguage
 }
 
 function format(s, args) {
