@@ -77,6 +77,7 @@ Item {
   // Display language: the choice made in Settings, or the system locale on
   // "auto". Passed down to every child component as `lang`.
   readonly property string lang: I18n.resolve(settingsView.language, Qt.locale().name)
+  onLangChanged: if (root.query !== "") root.applyFilter()
   function tr(s) { return I18n.tr.apply(null, [lang].concat(Array.prototype.slice.call(arguments))) }
   function trn(n, one, many) { return I18n.trn.apply(null, [lang].concat(Array.prototype.slice.call(arguments))) }
 
@@ -429,7 +430,9 @@ Item {
       // on its own while a query is present, so the control keeps working
       // during a search rather than being quietly ignored.
       sort: root.sortBy,
-      verifiedOnly: root.verifiedOnly
+      verifiedOnly: root.verifiedOnly,
+      // Search also matches a category by the name the sidebar shows.
+      lang: root.lang
     })
     // Clamp rather than reset: a filter change that keeps the selection
     // visible should not throw the user back to the top.
@@ -1370,6 +1373,7 @@ Item {
             Layout.fillHeight: true
             visible: root.showSettings
             binDir: root.binDir
+            cacheDir: root.jobDir
             pluginId: root.pluginId
           }
         }

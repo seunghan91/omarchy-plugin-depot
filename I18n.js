@@ -271,6 +271,7 @@ var tables = {
     "Which section of the bar the icon sits in.": "아이콘이 놓이는 바 구역입니다.",
     "Which section the icon would sit in, if it were shown.": "표시한다면 아이콘이 놓일 바 구역입니다.",
     "widget": "위젯",
+    "Widget": "위젯",
     "Widgets": "위젯",
     "workspaces": "워크스페이스",
     "yes": "예",

@@ -121,17 +121,65 @@ function extract() {
   return found
 }
 
-// Strings Model.js translates through a variable rather than a literal.
-function modelDynamicKeys() {
+// Model.js, loaded the way test-model.js loads it, for the lists that runtime
+// keys are built from.
+function loadModel() {
   const src = fs.readFileSync(path.join(dir, "Model.js"), "utf8")
+    .replace(/^\.pragma library\s*/, "")
+    .replace(/^\.import .*$/gm, "")
+  return new Function("I18n", src + `
+  return { SORTS: SORTS, JOB_VERBS: JOB_VERBS, jobStatusKey: jobStatusKey,
+           entryPointKind: entryPointKind, kindLabelFromKinds: kindLabelFromKinds }`)(I18n)
+}
+
+const Model = loadModel()
+
+// Omarchy's plugin kinds, as a manifest's `kinds` names them. Detail shows
+// them, and the entry points named after them, through tr().
+const KINDS = ["panel", "bar-widget", "overlay", "service", "widget"]
+
+// Where the bar sits, as shell.json's bar.position names it.
+const BAR_POSITIONS = ["top", "bottom"]
+
+// Strings the code translates through a variable rather than a literal: they
+// are built at runtime from these lists, so extract() cannot see them.
+function dynamicKeys() {
   const keys = []
-  const sorts = /var SORTS = \[([\s\S]*?)\]/.exec(src)
-  if (sorts) {
-    const re = /label:\s*("(?:\\.|[^"\\])*")/g
-    let m
-    while ((m = re.exec(sorts[1]))) keys.push({ key: JSON.parse(m[1]), where: "Model.js:SORTS" })
+  for (const s of Model.SORTS) keys.push({ key: s.label, where: "Model.js:SORTS" })
+  for (const v of Model.JOB_VERBS)
+    for (const phase of ["running", "failed", "finished"])
+      keys.push({ key: Model.jobStatusKey(v, phase), where: `JobStrip.qml (${v}, ${phase})` })
+
+  const bar = fs.readFileSync(path.join(dir, "BarLayout.qml"), "utf8")
+  const order = /property\s+var\s+order\s*:\s*\[([^\]]*)\]/.exec(bar)
+  const sections = order ? (order[1].match(/"[^"]*"|'[^']*'/g) || []).map(q => q.slice(1, -1)) : []
+  // An empty list would quietly drop these checks, so it fails instead.
+  check("BarLayout.qml's section order is found", sections.length > 0)
+  for (const name of sections)
+    keys.push({ key: name.toUpperCase(), where: "BarLayout.qml:order" })
+  for (const p of BAR_POSITIONS) keys.push({ key: p, where: "BarLayout.qml (bar position)" })
+
+  for (const k of KINDS) {
+    keys.push({ key: k, where: "Detail.qml (kind)" })
+    keys.push({ key: Model.kindLabelFromKinds([k]), where: "Model.kindLabelFromKinds" })
   }
   return keys
+}
+
+// Every verb a view can start a job with, read from the code: act("..."),
+// requestAction("...") and `verb: "..."`.
+function verbsInCode() {
+  const found = []
+  for (const file of sourceFiles()) {
+    const text = fs.readFileSync(path.join(dir, file), "utf8")
+    const re = /\b(?:act|requestAction)\s*\(([^()]*(?:\([^()]*\)[^()]*)*)\)|\bverb\s*:\s*("[a-z-]+"|'[a-z-]+')/g
+    let m
+    while ((m = re.exec(text))) {
+      const quoted = m[2] ? [m[2]] : (m[1].match(/"[a-z-]+"|'[a-z-]+'/g) || [])
+      for (const q of quoted) found.push({ verb: q.slice(1, -1), where: `${file}:${lineOf(text, m.index)}` })
+    }
+  }
+  return found
 }
 
 function placeholders(s) {
@@ -195,12 +243,28 @@ delete I18n.tables.ko[probe]
 delete I18n.tables.ko[probeOne]
 delete I18n.tables.ko[probeMany]
 
+console.log("Runtime keys")
+check("entry point barWidget shows as bar-widget", Model.entryPointKind("barWidget") === "bar-widget")
+check("entry point panel stays panel", Model.entryPointKind("panel") === "panel")
+for (const k of KINDS) {
+  const camel = k.replace(/-([a-z])/g, (_, c) => c.toUpperCase())
+  check(`entry point ${camel} maps back to ${k}`, Model.entryPointKind(camel) === k)
+}
+check("job status keys match the strings the strip used to build",
+  Model.jobStatusKey("remove", "running") === "Removing..."
+  && Model.jobStatusKey("bar-remove", "failed") === "Bar-remove failed (exit %1)"
+  && Model.jobStatusKey("update", "finished") === "Update finished")
+const strayVerbs = verbsInCode().filter(u => Model.JOB_VERBS.indexOf(u.verb) === -1)
+check("every verb the views start is in Model.JOB_VERBS", strayVerbs.length === 0,
+  strayVerbs.map(u => `${u.where} ${u.verb}`).join(", "))
+check("verbs are found in the code at all", verbsInCode().length >= Model.JOB_VERBS.length)
+
 const unitFailed = failed
 
 // ---------------------------------------------------------------- coverage
 
 console.log("Coverage of tables.ko")
-const used = extract().concat(modelDynamicKeys())
+const used = extract().concat(dynamicKeys())
 const ko = I18n.tables.ko
 const usedKeys = new Set(used.map(u => u.key))
 

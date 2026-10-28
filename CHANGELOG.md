@@ -21,7 +21,8 @@ This project follows [semantic versioning](https://semver.org):
   and anything without a translation stays in English. The English source text
   is the key, so a string reworded here simply shows in English until its
   translation catches up. `node test-i18n.js` fails when a string in the code
-  has no translation or a translation drops a placeholder.
+  has no translation or a translation drops a placeholder. Text from outside
+  stays as it arrives, except known catalogue categories and kinds.
 
 ## 1.1.1
 

@@ -121,6 +121,11 @@ menu, a keybinding, or `omarchy-shell shell toggle io.github.omarcodehub.plugin-
 to English. Translations live in [`I18n.js`](I18n.js), keyed by the English
 text, and `node test-i18n.js` checks that none is missing.
 
+Text that comes from outside, such as plugin descriptions, git output and
+command errors, is shown as it arrives. The one exception is the catalogue's
+categories and plugin kinds: those with an entry in the table are shown
+translated, and searching finds a category by either name.
+
 Everything is stored inline on this plugin's entry in `shell.json` and written
 through the `omarchy bar` commands, never by editing that file. The shell owns
 it and rewrites it whenever the bar changes.
