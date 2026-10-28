@@ -369,7 +369,7 @@ Item {
             return ""
           var out = []
           for (var kind in detail.record.entryPoints)
-            out.push(detail.tr(kind) + ": " + detail.record.entryPoints[kind])
+            out.push(detail.tr(Model.entryPointKind(kind)) + ": " + detail.record.entryPoints[kind])
           return out.join("\n")
         }
       }

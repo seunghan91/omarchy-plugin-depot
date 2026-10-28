@@ -21,8 +21,7 @@
       "catalogRefreshMinutes": 60,
       "updateCheckMinutes": 180,
       "showPreviews": true,
-      "verifiedOnly": false,
-      "language": "auto"
+      "verifiedOnly": false
     }
   },
   "barWidget": {

@@ -193,6 +193,12 @@ function kindLabelText(label, lang) {
   }).join(" + ")
 }
 
+// A manifest entry point is named in camelCase ("barWidget") where the kind it
+// serves is kebab-case ("bar-widget"), so it is shown under the kind's label.
+function entryPointKind(name) {
+  return String(name || "").replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase()
+}
+
 function kindLabelFromKinds(kinds) {
   if (!kinds || !kinds.length) return ""
   return kinds.map(function (k) {
@@ -211,7 +217,7 @@ function initialsFor(name) {
 
 // Ranked rather than boolean: with 2200 plugins, an exact name match has to
 // beat a description that merely mentions the word, or search is unusable.
-function scoreMatch(record, needle) {
+function scoreMatch(record, needle, lang) {
   if (!needle) return 1
   var name = record.name.toLowerCase()
   var id = record.id.toLowerCase()
@@ -222,6 +228,10 @@ function scoreMatch(record, needle) {
   for (var t = 0; t < record.tags.length; t++)
     if (String(record.tags[t]).toLowerCase() === needle) return 100
   if (record.haystack.indexOf(needle) !== -1) return 40
+  // The sidebar shows a known category in the panel's language, so that name
+  // has to find it as well as the catalogue's own.
+  if (lang && record.category
+    && I18n.tr(lang, record.category).toLowerCase().indexOf(needle) !== -1) return 40
   return 0
 }
 
@@ -251,7 +261,7 @@ function filterAndSort(records, opts) {
     if (category && r.category !== category) continue
     if (kind && r.kinds.indexOf(kind) === -1) continue
     if (verifiedOnly && !r.verified && !r.firstParty) continue
-    var score = scoreMatch(r, needle)
+    var score = scoreMatch(r, needle, opts.lang)
     if (score === 0) continue
     r._score = score
     out.push(r)
@@ -291,10 +301,28 @@ var SORTS = [
   { value: "name", label: "By name" }
 ]
 
-function sortOptions(lang) {
+// English labels; the view translates them where it draws them.
+function sortOptions() {
   return SORTS.map(function (s) {
-    return { value: s.value, label: I18n.tr(lang || "en", s.label) }
+    return { value: s.value, label: s.label }
   })
+}
+
+// Every verb a job runs under. JobStrip builds its status line from the verb,
+// so test-i18n.js builds the same strings from this list and checks that each
+// has a translation, and checks that every verb the views start is listed.
+var JOB_VERBS = ["install", "update", "remove", "enable", "disable", "bar-remove"]
+
+// phase: "running" | "failed" | "finished". The key, untranslated; "failed"
+// takes the exit code as %1.
+function jobStatusKey(verb, phase) {
+  var v = String(verb || "")
+  var name = v.charAt(0).toUpperCase() + v.slice(1)
+  if (phase === "running")
+    return name.replace(/e$/, "") + "ing..."
+  if (phase === "failed")
+    return name + " failed (exit %1)"
+  return name + " finished"
 }
 
 function isSort(value) {

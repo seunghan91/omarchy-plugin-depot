@@ -43,12 +43,54 @@ Item {
 
   // "auto" | "en" | "ko", the stored choice rather than the resolved language:
   // "auto" has to stay selectable. Panel resolves it against the locale.
+  // Until pm-settings answers, the copy kept in the job dir stands in for it,
+  // so a panel re-summoned after an action draws in that language from its
+  // first frame.
   readonly property string language: {
     if (!state || !state.settings)
-      return "auto"
-    var v = String(state.settings.language || "auto")
-    return I18n.languages.indexOf(v) >= 0 ? v : "auto"
+      return cachedLanguage !== "" ? cachedLanguage : "auto"
+    return validLanguage(state.settings.language) || "auto"
   }
+
+  function validLanguage(v) {
+    var s = String(v || "")
+    return I18n.languages.indexOf(s) >= 0 ? s : ""
+  }
+
+  // ─────────────────────────────────────────────── language cache
+  // $XDG_RUNTIME_DIR, passed in by Panel. Holds the stored choice, never the
+  // resolved language, so "auto" keeps following the locale. Written whenever
+  // pm-settings reads it or bar-set changes it; bar-set does not rescan, so
+  // this component outlives the change and can write it. The runtime dir is
+  // emptied at boot, and a missing file is the one case where the panel asks
+  // pm-settings at load. A change made outside the panel shows once Settings
+  // is opened.
+  property string cacheDir: ""
+  property string cachedLanguage: ""
+  // binDir is bound before Component.onCompleted reads the cache, so its
+  // change handler waits for this rather than reading against an empty cache.
+  property bool started: false
+
+  FileView {
+    id: languageFile
+    path: settings.cacheDir === "" ? "" : settings.cacheDir + "/language"
+    // Read before the first frame, not after it.
+    blockLoading: true
+    printErrors: false
+  }
+
+  function storeLanguage(v) {
+    var s = settings.validLanguage(v)
+    if (s === "" || settings.cacheDir === "" || s === settings.cachedLanguage)
+      return
+    settings.cachedLanguage = s
+    languageFile.setText(s + "\n")
+  }
+
+  // A read that overlapped a change may carry the value from before it, so its
+  // result is dropped; the read that follows every change replaces it.
+  property int changeSerial: 0
+  property bool rereadWanted: false
 
   readonly property int checkMinutes: {
     if (!state || !state.settings || state.settings.updateCheckMinutes === undefined)
@@ -60,7 +102,14 @@ Item {
   function reload() {
     if (settings.binDir === "")
       return
+    // Setting `running` on a running Process does nothing, so a reload asked
+    // for mid-read runs once that read ends.
+    if (readProc.running) {
+      settings.rereadWanted = true
+      return
+    }
     settings.loading = true
+    readProc.serial = settings.changeSerial
     readProc.running = true
   }
 
@@ -68,6 +117,7 @@ Item {
     if (settings.binDir === "" || applyProc.running)
       return
     settings.error = ""
+    settings.changeSerial++
     applyProc.pending = verb === "bar-move"
       ? ["bar-move", settings.pluginId, a]
       : ["bar-set", settings.pluginId, a, String(b)]
@@ -75,10 +125,15 @@ Item {
   }
 
   onVisibleChanged: if (visible) settings.reload()
-  // Read once at load as well, not only when the view is shown: Panel takes its
-  // display language from `language`, and needs it before Settings is opened.
-  Component.onCompleted: settings.reload()
-  onBinDirChanged: if (visible) settings.reload()
+  Component.onCompleted: {
+    settings.cachedLanguage = settings.validLanguage(String(languageFile.text()).trim())
+    // Panel takes its display language from `language`. With no cached copy,
+    // read it now rather than waiting for Settings to be opened.
+    settings.started = true
+    if (settings.cachedLanguage === "")
+      settings.reload()
+  }
+  onBinDirChanged: if (settings.started && (visible || settings.cachedLanguage === "")) settings.reload()
 
   Rectangle {
     anchors.fill: parent
@@ -236,16 +291,22 @@ Item {
 
   Process {
     id: readProc
+    property int serial: 0
     command: settings.binDir === "" ? [] : [settings.binDir + "/pm-settings", "--id", settings.pluginId]
     stdout: StdioCollector {
       waitForEnd: true
       onStreamFinished: {
         settings.loading = false
+        if (readProc.serial !== settings.changeSerial) {
+          rereadDelay.restart()
+          return
+        }
         try {
           var parsed = JSON.parse(text || "null")
           if (parsed && parsed.ok) {
             settings.state = parsed
             settings.error = ""
+            settings.storeLanguage((parsed.settings && parsed.settings.language) || "auto")
           } else {
             settings.error = parsed && parsed.error
               ? I18n.raw(String(parsed.error)) : I18n.later("Could not read the current settings.")
@@ -255,7 +316,21 @@ Item {
         }
       }
     }
-    onExited: settings.loading = false
+    onExited: {
+      settings.loading = false
+      if (settings.rereadWanted) {
+        settings.rereadWanted = false
+        rereadDelay.restart()
+      }
+    }
+  }
+
+  // Deferred out of the handlers above. If the Process has still not exited
+  // when this fires, reload() leaves the read to onExited.
+  Timer {
+    id: rereadDelay
+    interval: 0
+    onTriggered: settings.reload()
   }
 
   Process {
@@ -274,6 +349,11 @@ Item {
     onExited: function (exitCode) {
       if (exitCode !== 0 && settings.error === "")
         settings.error = I18n.later("That change could not be applied (exit %1).", exitCode)
+      // pm-act validated the value before writing it, so it is the stored
+      // choice now; the read below confirms it.
+      if (exitCode === 0 && applyProc.pending[0] === "bar-set" && applyProc.pending[2] === "language")
+        settings.storeLanguage(applyProc.pending[3])
+      settings.changeSerial++
       // The shell rewrites shell.json asynchronously, so read back rather than
       // assuming the value we asked for is the value that landed.
       reloadDelay.restart()

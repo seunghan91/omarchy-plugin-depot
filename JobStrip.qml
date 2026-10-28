@@ -3,6 +3,7 @@ import QtQuick.Layouts
 import qs.Ui
 import qs.Commons
 import "I18n.js" as I18n
+import "Model.js" as Model
 
 // The running-action strip along the bottom.
 //
@@ -46,13 +47,8 @@ Rectangle {
         text: {
           if (!strip.job)
             return ""
-          var verb = String(strip.job.verb || "")
-          var name = verb.charAt(0).toUpperCase() + verb.slice(1)
-          if (strip.running)
-            return strip.tr(name.replace(/e$/, "") + "ing...")
-          if (strip.failed)
-            return strip.tr(name + " failed (exit %1)", strip.job.exit)
-          return strip.tr(name + " finished")
+          var phase = strip.running ? "running" : strip.failed ? "failed" : "finished"
+          return strip.tr(Model.jobStatusKey(strip.job.verb, phase), strip.job.exit)
         }
         textFormat: Text.PlainText
         color: strip.failed ? Color.urgent : Color.foreground
